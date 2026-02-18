@@ -1,0 +1,11 @@
+{
+  "platform": "docker",
+  "app": "my-visitor-app", 
+  "port": 8501,
+  "disks": [
+    {
+      "name": "data",
+      "mountTo": "/app/data"
+    }
+  ]
+}
