@@ -4,9 +4,10 @@
   "port": 8501,
   "disks": [
     {
-      "name": "data",
+      "name": "visitor-data",
       "mountTo": "/app/data"
     }
   ]
 
 }
+
