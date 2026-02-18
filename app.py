@@ -25,12 +25,18 @@ def load_products():
         # خواندن فایل با حذف ردیف‌های کاملاً خالی
         df = pd.read_csv(PRODUCT_FILE).dropna(how='all')
         
-        # استانداردسازی نام ستون‌ها (حذف فاصله‌ها و تبدیل ک و ی عربی به فارسی)
-        df.columns = [c.strip().replace('ك', 'ک').replace('ي', 'ی') for c in df.columns]
+        # --- بخش حل مشکل KeyError (هوشمندسازی بر اساس ردیف) ---
+        # به جای تکیه بر نام، نام ستون‌ها را بر اساس جایگاهشان بازنشانی می‌کنیم
+        if len(df.columns) >= 2:
+            new_cols = list(df.columns)
+            new_cols[0] = "کد کالا"
+            new_cols[1] = "عنوان کالا"
+            df.columns = new_cols
         
-        # استانداردسازی محتوای ستون‌ها (اگر ستون متنی است)
-        for col in df.select_dtypes(include=['object']).columns:
-            df[col] = df[col].astype(str).str.strip().str.replace('ك', 'ک').str.replace('ي', 'ی')
+        # استانداردسازی محتوا (حذف فاصله‌ها و اصلاح حروف ک و ی در کل جدول)
+        df = df.astype(str) # تبدیل کل جدول به متن برای پردازش
+        for col in df.columns:
+            df[col] = df[col].str.strip().str.replace('ك', 'ک').str.replace('ي', 'ی')
             
         return df
     except Exception as e:
@@ -48,7 +54,6 @@ def load_customers():
 
 def save_customer(name, address, phone, c_type):
     df = load_customers()
-    # استانداردسازی نام برای جستجوی دقیق‌تر
     name = name.strip().replace('ك', 'ک').replace('ي', 'ی')
     
     if not df.empty and name in df["Name"].values:
@@ -125,7 +130,7 @@ if not products_df.empty:
     with st.expander("افزودن کالا به لیست", expanded=True):
         p_col1, p_col2 = st.columns(2)
         with p_col1:
-            # استفاده از نام‌های اصلاح شده ستون‌ها
+            # استفاده از لیست محصولاتی که نام ستونشان را در تابع load_products اصلاح کردیم
             product_list = products_df["عنوان کالا"].tolist()
             selected_product_name = st.selectbox("انتخاب کالا:", product_list)
             selected_row = products_df[products_df["عنوان کالا"] == selected_product_name].iloc[0]
@@ -181,9 +186,8 @@ if not products_df.empty:
                     st.write(f"**مبلغ قابل پرداخت: {total_invoice:,.0f} تومان**")
                 
                 st.session_state.cart = []
-                if st.button("ثبت سفارش جدید"):
-                    st.rerun()
+                # حذف دکمه اضافی برای جلوگیری از تداخل، اسکرول به بالا کافیست
     else:
         st.info("سبد خرید خالی است.")
 else:
-    st.error("فایل محصولات (products.csv) یافت نشد یا ستون‌های آن اشتباه است.")
+    st.error("فایل محصولات یافت نشد یا ساختار آن (ستون ۱ و ۲) اشتباه است.")
