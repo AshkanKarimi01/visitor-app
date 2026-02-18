@@ -1,6 +1,6 @@
 {
   "platform": "docker",
-  "app": "my-visitor-app", 
+  "app": "visitor-app", 
   "port": 8501,
   "disks": [
     {
@@ -8,4 +8,5 @@
       "mountTo": "/app/data"
     }
   ]
+
 }
