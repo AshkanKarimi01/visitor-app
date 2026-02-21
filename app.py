@@ -76,7 +76,7 @@ def load_products():
 def load_customers():
     if os.path.exists(CUSTOMERS_DB):
         try:
-            return pd.read_csv(CUSTOMERS_DB)
+            return pd.read_csv(CUSTOMERS_DB, on_bad_lines='skip')
         except:
             return pd.DataFrame(columns=["Name", "Address", "Phone", "Type"])
     else:
@@ -84,7 +84,9 @@ def load_customers():
 
 def save_customer(name, address, phone, c_type):
     df = load_customers()
-    name = name.strip().replace('ك', 'ک').replace('ي', 'ی')
+    # اصلاح کاراکترهای عربی و حذف کاما برای جلوگیری از خرابی CSV
+    name = name.strip().replace('ك', 'ک').replace('ي', 'ی').replace(',', '،')
+    address = address.replace(',', '،')
     
     if not df.empty and name in df["Name"].values:
         df.loc[df["Name"] == name, ["Address", "Phone", "Type"]] = [address, phone, c_type]
@@ -95,6 +97,11 @@ def save_customer(name, address, phone, c_type):
 
 def save_order(invoice_no, date, customer_name, items_df, issuer):
     to_save = items_df.copy()
+    # اصلاح متن‌ها برای جلوگیری از تداخل با جداکننده CSV
+    customer_name = customer_name.replace(',', '،')
+    if "ProductName" in to_save.columns:
+        to_save["ProductName"] = to_save["ProductName"].astype(str).str.replace(',', '،')
+    
     to_save["InvoiceNo"] = invoice_no
     to_save["Date"] = date
     to_save["Customer"] = customer_name
@@ -219,7 +226,7 @@ with tab1:
                     # ارسال نام کاربری به عنوان ثبت کننده فاکتور
                     save_order(inv_no, inv_date, final_name, cart_df, st.session_state.username)
                     
-                    st.balloons()
+                    # st.balloons()  # افکت بادکنک حذف شد
                     st.success(f"فاکتور شماره {inv_no} با موفقیت ثبت شد.")
                     
                     with st.container():
@@ -247,9 +254,9 @@ with tab2:
     
     if os.path.exists(ORDERS_DB):
         try:
-            orders_df = pd.read_csv(ORDERS_DB)
+            # استفاده از on_bad_lines برای جلوگیری از کرش کردن در صورت خرابی فایل
+            orders_df = pd.read_csv(ORDERS_DB, on_bad_lines='skip')
             if not orders_df.empty:
-                # یک کپی برای نمایش میگیریم که اصل دیتابیس تغییر نکند
                 display_orders = orders_df.copy()
                 
                 # تبدیل مقادیر به عدد و فرمت سه رقم سه رقم
@@ -270,11 +277,9 @@ with tab2:
                     "Issuer": "ثبت کننده"
                 }
                 
-                # فقط ستون‌هایی که در دیکشنری بالا تعریف کردیم را نمایش می‌دهیم
                 display_orders = display_orders[[c for c in cols_to_show.keys() if c in display_orders.columns]]
                 display_orders.rename(columns=cols_to_show, inplace=True)
                 
-                # نمایش جدول با قابلیت اسکرول و جستجو
                 st.dataframe(display_orders, use_container_width=True, hide_index=True)
                 
             else:
