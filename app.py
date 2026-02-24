@@ -95,7 +95,7 @@ def save_customer(name, address, phone, c_type):
         df = pd.concat([df, new_row], ignore_index=True)
     df.to_csv(CUSTOMERS_DB, index=False)
 
-def save_order(invoice_no, date, customer_name, items_df, issuer):
+def save_order(invoice_no, date, customer_name, items_df, issuer, sale_type):
     to_save = items_df.copy()
     # اصلاح متن‌ها برای جلوگیری از تداخل با جداکننده CSV
     customer_name = customer_name.replace(',', '،')
@@ -105,6 +105,7 @@ def save_order(invoice_no, date, customer_name, items_df, issuer):
     to_save["InvoiceNo"] = invoice_no
     to_save["Date"] = date
     to_save["Customer"] = customer_name
+    to_save["SaleType"] = sale_type  # <--- اضافه شدن نوع فروش
     to_save["Issuer"] = issuer  # ثبت کننده فاکتور
     
     if not os.path.exists(ORDERS_DB):
@@ -214,6 +215,10 @@ with tab1:
             total_invoice = cart_df["TotalPrice"].sum()
             st.metric("جمع کل (تومان)", f"{total_invoice:,.0f}")
 
+            st.write("---")
+            # اضافه شدن انتخاب نوع فروش
+            sale_type = st.radio("نوع فروش:", ["نقدی", "اعتباری", "چکی"], horizontal=True)
+
             if st.button("✅ ثبت نهایی و صدور فاکتور", type="primary"):
                 if not final_name or not address:
                     st.error("اطلاعات مشتری (نام و آدرس) تکمیل نیست!")
@@ -223,16 +228,16 @@ with tab1:
                     inv_no = int(time.time())
                     
                     save_customer(final_name, address, phone, c_type)
-                    # ارسال نام کاربری به عنوان ثبت کننده فاکتور
-                    save_order(inv_no, inv_date, final_name, cart_df, st.session_state.username)
+                    # ارسال نام کاربری و نوع فروش به عنوان ثبت کننده فاکتور
+                    save_order(inv_no, inv_date, final_name, cart_df, st.session_state.username, sale_type)
                     
-                    # st.balloons()  # افکت بادکنک حذف شد
                     st.success(f"فاکتور شماره {inv_no} با موفقیت ثبت شد.")
                     
                     with st.container():
                         st.markdown(f"""
                         ### فاکتور فروش
                         **شماره:** {inv_no}  |  **تاریخ:** {inv_date}  |  **ثبت کننده:** {st.session_state.username}
+                        **نوع فروش:** {sale_type}
                         **مشتری:** {final_name}  |  **تلفن:** {phone}  
                         **آدرس:** {address}
                         """)
@@ -265,11 +270,12 @@ with tab2:
                         display_orders[col] = pd.to_numeric(display_orders[col], errors='coerce')
                         display_orders[col] = display_orders[col].apply(lambda x: f"{x:,.0f}" if pd.notna(x) else "")
                 
-                # ترجمه و مرتب‌سازی ستون‌ها برای نمایش زیبا
+                # ترجمه و مرتب‌سازی ستون‌ها برای نمایش زیبا (اضافه شدن نوع فروش)
                 cols_to_show = {
                     "InvoiceNo": "شماره فاکتور",
                     "Date": "تاریخ",
                     "Customer": "مشتری",
+                    "SaleType": "نوع فروش",  # <--- ستون جدید
                     "ProductName": "نام کالا",
                     "Weight": "مقدار",
                     "UnitPrice": "فی (تومان)",
