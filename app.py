@@ -12,7 +12,7 @@ st.set_page_config(page_title="سیستم پخش مویرگی", layout="centered
 # ==========================================
 USERS = {
     "admin": "admin123@",
-    "ganjpour": "qwe123@"
+    "amir": "04700"
 }
 
 if 'logged_in' not in st.session_state:
